@@ -10,6 +10,7 @@ from pygame.locals import *
 
 DIFFICULTY = 10
 FPS = 30
+TURN_TIME_LIMIT=15.0
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
 GRID_WIDTH, GRID_HEIGHT = 300, 400
@@ -54,27 +55,6 @@ def load_cards_from_csv():
 
     return card_list
 
-
-# def drawField():
-#     DISPLAYSURF.fill(BACKGROUNDCOLOR)
-#     spaceRect = pygame.Rect(0, 0, 200, 200)
-#     # pygame.draw.rect(pygame.display.get_surface(), BLACK, (100, 100, 200, 150))
-#     # pygame.draw.line(pygame.display.get_surface(), BLACK, (100,100), (200,200), 5)
-#
-#     for i in range(1, GRID_SIZE):  # Vertical lines
-#         x = GRID_X + i * CELL_WIDTH
-#         pygame.draw.line(pygame.display.get_surface(), BLACK, (x, GRID_Y), (x, GRID_Y + GRID_HEIGHT), LINE_WIDTH)
-#
-#     for i in range(1, GRID_SIZE):  # Horizontal lines
-#         y = GRID_Y + i * CELL_HEIGHT
-#         pygame.draw.line(pygame.display.get_surface(), BLACK, (GRID_X, y), (GRID_X + GRID_WIDTH, y), LINE_WIDTH)
-#
-#     rect_x = GRID_X+CELL_WIDTH+LINE_WIDTH
-#     rect_y = GRID_Y+LINE_WIDTH
-#     rect_width = CELL_WIDTH-LINE_WIDTH
-#     rect_height = CELL_HEIGHT-LINE_WIDTH
-#     pygame.draw.rect(pygame.display.get_surface(), WHITE, (rect_x, rect_y, rect_width, rect_height))
-
 def welcome_screen():
     font = pygame.font.SysFont(None, 72)
     surf = font.render("welcome screen", True, WHITE)
@@ -106,6 +86,9 @@ if __name__ == '__main__':
         right_hand.append(card_list[i])
     selected_card = 0
     selected_spot = 0
+    previous_human_move=True
+    score=0
+    remaining_time=TURN_TIME_LIMIT
 
 
     pygame.init()
@@ -118,23 +101,10 @@ if __name__ == '__main__':
     welcome_screen()
     game_state="left_select_card"
 
-    # card1 = Button(50,75,50,65)
-    # card2 = Button(50, 150, 50, 65)
-    # card3 = Button(50, 225, 50, 65)
-    # card4 = Button(50, 300, 50, 65)
-    # card5 = Button(50, 375, 50, 65)
-    # card1r = Button(WINDOWWIDTH-65-50,75,50,65)
-    # card2r = Button(WINDOWWIDTH-65-50, 150, 50, 65)
-    # card3r = Button(WINDOWWIDTH-65-50, 225, 50, 65)
-    # card4r = Button(WINDOWWIDTH-65-50, 300, 50, 65)
-    # card5r = Button(WINDOWWIDTH-65-50, 375, 50, 65)
-
-    # Create buttons
     left_buttons = []
     right_buttons = []
     field_buttons =[]
 
-    # Position constants
     x_left = 50
     x_right = WINDOWWIDTH - 65 - 50
     y_start = 75
@@ -170,14 +140,30 @@ if __name__ == '__main__':
             pygame.draw.line(pygame.display.get_surface(), BLACK, (GRID_X, y), (GRID_X + GRID_WIDTH, y), LINE_WIDTH)
 
 
+        font = pygame.font.SysFont(None, 48)
+        text = font.render("SCORE: "+ str(score), True, (0, 0, 0))
+        text_rect = text.get_rect()
+        text_rect.topleft = (10, 5)
+        pygame.display.get_surface().fill(BACKGROUNDCOLOR, text_rect)
+        pygame.display.get_surface().blit(text, text_rect)
+        pygame.display.update(text_rect)
+        font = pygame.font.SysFont(None, 18)
+        text = font.render("time left: "+ str(int(remaining_time)), True, (0, 0, 0))
+        text_rect.topleft = (10, 40)
+        pygame.display.get_surface().fill(BACKGROUNDCOLOR, text_rect)
+        pygame.display.get_surface().blit(text, text_rect)
+        pygame.display.update(text_rect)
+
+        # DISPLAYSURF.fill(TEAL)
 
 
 
         if game_state == "left_select_card":
+            previous_human_move = True
             for i, btn in enumerate(left_buttons):
                 if btn.draw(DISPLAYSURF, left_hand[i]):
                     selected_card=i
-                    print(selected_card)
+                    # print(selected_card)
                     game_state="left_place_card"
         else:
             for i, btn in enumerate(left_buttons):
@@ -188,7 +174,7 @@ if __name__ == '__main__':
                 if cards_on_field[i] is None:
                     if btn.colour_show(DISPLAYSURF, BACKGROUNDCOLOR):
                         selected_spot = i
-                        print(selected_spot)
+                        # print(selected_spot)
                         game_state = "move_card"
                 else:
                     btn.draw(DISPLAYSURF, cards_on_field[i])
@@ -197,11 +183,56 @@ if __name__ == '__main__':
             # print(left_hand[selected_card].N)
             left_hand[selected_card].is_hidden=True
             cards_on_field[selected_spot].colour=GREEN
+            remaining_time=TURN_TIME_LIMIT
             game_state="check_move_results"
 
-        # if game_state == "check_move_results":
-        #     if
+        if game_state == "right_comp_move":
+            previous_human_move = False
+            available_cards = [i for i, card in enumerate(right_hand) if not card.is_hidden]
+            available_spots = [i for i, spot in enumerate(cards_on_field) if spot is None]
+            if available_spots==[] or available_cards==[]:
+                game_state="results"
+            else:
+                selected_card = random.choice(available_cards)
+                selected_spot = random.choice(available_spots)
+                cards_on_field[selected_spot]=copy(right_hand[selected_card])
+                cards_on_field[selected_spot].colour=RED
+                right_hand[selected_card].is_hidden=True
+                game_state="check_move_results"
 
+
+
+        if game_state == "check_move_results":
+            if previous_human_move:
+                colour=GREEN
+            else:
+                colour=RED
+            if selected_spot>2: #check north
+                if cards_on_field[selected_spot-3] is not None:
+                    if cards_on_field[selected_spot].N > cards_on_field[selected_spot-3].S:
+                        cards_on_field[selected_spot-3].colour=colour
+            if selected_spot<6: #south
+                if cards_on_field[selected_spot+3] is not None:
+                    if cards_on_field[selected_spot].S > cards_on_field[selected_spot+3].N:
+                        cards_on_field[selected_spot+3].colour=colour
+            if selected_spot % 3 !=0: #west
+                if cards_on_field[selected_spot-1] is not None:
+                    if cards_on_field[selected_spot].W > cards_on_field[selected_spot-1].E:
+                        cards_on_field[selected_spot-1].colour=colour
+            if selected_spot %3 !=2:
+                if cards_on_field[selected_spot+1] is not None:
+                    if cards_on_field[selected_spot].E > cards_on_field[selected_spot+1].W:
+                        cards_on_field[selected_spot+1].colour=colour
+            score = sum(
+                1 for card in cards_on_field
+                if card is not None and card.colour == GREEN
+            )
+            if previous_human_move:
+                game_state="right_comp_move"
+            else:
+                game_state="left_select_card"
+        if game_state=="results":
+            print("end")
         for i, btn in enumerate(right_buttons):
             btn.draw(DISPLAYSURF, right_hand[i])
 
@@ -213,5 +244,7 @@ if __name__ == '__main__':
 
 
         pygame.display.update()
-        FPSCLOCK.tick()
+        dt= FPSCLOCK.tick(FPS)
+        remaining_time -= dt/1000
+        print(int(remaining_time))
 

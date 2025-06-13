@@ -8,3 +8,4 @@ class Card:
         self.img = img
         self.colour = colour
         self.is_hidden = is_hidden
+
