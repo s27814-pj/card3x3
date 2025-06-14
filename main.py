@@ -81,6 +81,7 @@ if __name__ == '__main__':
     global FPSCLOCK, DISPLAYSURF
 
     pygame.init()
+    plus_sound_effect = pygame.mixer.Sound('24.wav')
     pygame.mixer.music.load("song18.mp3")
     pygame.mixer.music.play(-1)
     FPSCLOCK = pygame.time.Clock()
@@ -256,6 +257,7 @@ if __name__ == '__main__':
                                 indices.append(j)
                                 indices.append(i)
                                 print("PLUS")
+                                plus_sound_effect.play()
                     if 0 in indices:
                         cards_on_field[selected_spot - 3].colour = colour
                     if 1 in indices:
@@ -330,3 +332,5 @@ if __name__ == '__main__':
         pygame.display.update()
         dt = FPSCLOCK.tick(FPS)
         remaining_time -= dt / 1000
+
+# sound -  cynicmusic / https://opengameart.org
