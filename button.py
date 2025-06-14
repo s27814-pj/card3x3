@@ -28,7 +28,7 @@ class Button():
 
             pygame.draw.rect(surface, card.colour, self.rect)
             font = pygame.font.SysFont(None, 24)
-            text = font.render(str(card.N), True, (0, 0, 0))  # Black text
+            text = font.render(str(card.N), True, (0, 0, 0))
             text_rect = text.get_rect()
             text_rect.center = (self.rect.centerx, self.rect.top + 12)
             surface.blit(text, text_rect)
@@ -62,5 +62,26 @@ class Button():
             self.clicked = False
 
         pygame.draw.rect(surface, colour, self.rect)
+
+        return action
+
+    def text_show(self, surface, text_in, colour):
+        action = False
+        pos = pygame.mouse.get_pos()
+
+        if self.rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+                self.clicked = True
+                action = True
+
+        if pygame.mouse.get_pressed()[0] == 0:
+            self.clicked = False
+
+        pygame.draw.rect(surface, colour, self.rect)
+        font = pygame.font.SysFont(None, 32)
+        text = font.render(str(text_in), True, (0, 0, 0))
+        text_rect = text.get_rect()
+        text_rect.center = (self.rect.centerx, self.rect.centery)
+        surface.blit(text, text_rect)
 
         return action
