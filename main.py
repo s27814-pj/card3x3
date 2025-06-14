@@ -1,14 +1,14 @@
 import csv
 import random
 import sys
-from copy import copy
+from copy import copy, deepcopy
 
 from card import Card
 from button import Button
 import pygame
 from pygame.locals import *
 
-DIFFICULTY = 10
+DIFFICULTY = 50
 FPS = 30
 TURN_TIME_LIMIT = 15.0
 WINDOW_WIDTH = 640
@@ -119,6 +119,14 @@ if __name__ == '__main__':
             score = 0
             remaining_time = TURN_TIME_LIMIT
             rule_plus = False
+            play_to_lose = True
+            simulate = False
+            simulate_counter=0
+            previous_cards_on_field = [None] * 9
+            previous_score=0
+            best_card_to_move =0
+            best_spot_to_move =0
+            best_advantage=0
 
             left_buttons = []
             right_buttons = []
@@ -173,13 +181,13 @@ if __name__ == '__main__':
                 text_rect.topleft = (10, 5)
                 DISPLAYSURF.fill(BACKGROUND_COLOR, text_rect)
                 DISPLAYSURF.blit(text, text_rect)
-                pygame.display.update(text_rect)
+                if not simulate: pygame.display.update(text_rect)
                 font = pygame.font.SysFont(None, 18)
                 text = font.render("time left: " + str(int(remaining_time)), True, (0, 0, 0))
                 text_rect.topleft = (10, 40)
                 DISPLAYSURF.fill(BACKGROUND_COLOR, text_rect)
                 DISPLAYSURF.blit(text, text_rect)
-                pygame.display.update(text_rect)
+                if not simulate: pygame.display.update(text_rect)
 
             if game_state == "left_select_card":
                 previous_human_move = True
@@ -205,6 +213,7 @@ if __name__ == '__main__':
                 left_hand[selected_card].is_hidden = True
                 cards_on_field[selected_spot].colour = GREEN
                 remaining_time = TURN_TIME_LIMIT
+                simulate_counter=0
                 game_state = "check_move_results"
 
             if game_state == "right_comp_move":
@@ -216,12 +225,41 @@ if __name__ == '__main__':
                     pygame.time.wait(2000)
                     game_state = "results"
                 else:
-                    selected_card = random.choice(available_cards)
-                    selected_spot = random.choice(available_spots)
-                    cards_on_field[selected_spot] = copy(right_hand[selected_card])
-                    cards_on_field[selected_spot].colour = RED
-                    right_hand[selected_card].is_hidden = True
-                    game_state = "check_move_results"
+                    if play_to_lose:
+                            if simulate_counter < DIFFICULTY:
+                                simulate=True
+                                if simulate_counter == 0:
+                                    previous_cards_on_field = deepcopy(cards_on_field)
+                                    previous_score=score
+                                simulate_counter += 1
+                                if previous_score-score > best_advantage:
+                                    best_spot_to_move = selected_spot
+                                    best_card_to_move = selected_card
+                                cards_on_field=deepcopy(previous_cards_on_field)
+                                selected_card = random.choice(available_cards)
+                                selected_spot = random.choice(available_spots)
+                                if simulate_counter == 1:
+                                    best_card_to_move, best_spot_to_move = selected_card, selected_spot
+                                cards_on_field[selected_spot] = copy(right_hand[selected_card])
+                                cards_on_field[selected_spot].colour = RED
+                                game_state = "check_move_results"
+                            else:
+                                simulate=False
+                                cards_on_field = deepcopy(previous_cards_on_field)
+                                selected_card=best_card_to_move
+                                selected_spot=best_spot_to_move
+                                cards_on_field[selected_spot] = copy(right_hand[selected_card])
+                                cards_on_field[selected_spot].colour = RED
+                                right_hand[selected_card].is_hidden = True
+                                game_state = "check_move_results"
+
+                    else:
+                        selected_card = random.choice(available_cards)
+                        selected_spot = random.choice(available_spots)
+                        cards_on_field[selected_spot] = copy(right_hand[selected_card])
+                        cards_on_field[selected_spot].colour = RED
+                        right_hand[selected_card].is_hidden = True
+                        game_state = "check_move_results"
 
             if game_state == "check_move_results":
                 if previous_human_move:
@@ -257,7 +295,7 @@ if __name__ == '__main__':
                                 indices.append(j)
                                 indices.append(i)
                                 print("PLUS")
-                                plus_sound_effect.play()
+                                if not simulate:plus_sound_effect.play()
                     if 0 in indices:
                         cards_on_field[selected_spot - 3].colour = colour
                     if 1 in indices:
@@ -271,10 +309,12 @@ if __name__ == '__main__':
                     1 for card in cards_on_field
                     if card is not None and card.colour == GREEN
                 )
-                if previous_human_move:
-                    game_state = "right_comp_move"
+                if simulate: game_state="right_comp_move"
                 else:
-                    game_state = "left_select_card"
+                    if previous_human_move:
+                        game_state = "right_comp_move"
+                    else:
+                        game_state = "left_select_card"
 
             for i, btn in enumerate(right_buttons):
                 btn.draw_card(DISPLAYSURF, right_hand[i])
@@ -329,7 +369,7 @@ if __name__ == '__main__':
             print_text("press R to restart", WINDOW_WIDTH // 2, (WINDOW_HEIGHT // 10) * 6, TEAL)
             print_text("press R to return to menu", WINDOW_WIDTH // 2, (WINDOW_HEIGHT // 10) * 7, TEAL)
 
-        pygame.display.update()
+        if not simulate: pygame.display.update()
         dt = FPSCLOCK.tick(FPS)
         remaining_time -= dt / 1000
 
