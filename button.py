@@ -10,14 +10,12 @@ class Button():
         self.clicked = False
 
 
-    def draw(self, surface, card):
+    def draw_card(self, surface, card):
         action = False
         if card.is_hidden:
             pygame.draw.rect(surface, GRAY, self.rect)
         else:
-
             pos = pygame.mouse.get_pos()
-
             if self.rect.collidepoint(pos):
                 if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
                     self.clicked = True
@@ -45,12 +43,10 @@ class Button():
             text_rect.center = (self.rect.right - 12, self.rect.centery)
             surface.blit(text, text_rect)
 
-
         return action
 
-    def colour_show(self, surface, colour):
+    def draw_empty(self, surface, colour):
         action = False
-
         pos = pygame.mouse.get_pos()
 
         if self.rect.collidepoint(pos):
@@ -62,10 +58,9 @@ class Button():
             self.clicked = False
 
         pygame.draw.rect(surface, colour, self.rect)
-
         return action
 
-    def text_show(self, surface, text_in, colour):
+    def draw_text(self, surface, text_in, colour):
         action = False
         pos = pygame.mouse.get_pos()
 

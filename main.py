@@ -66,7 +66,7 @@ def welcome_screen():
     rect.topleft = (WINDOWWIDTH //4 , 155)
     DISPLAYSURF.blit(surf, rect)
     pygame.display.update()
-    pygame.time.wait(500)
+    pygame.time.wait(2500)
     DISPLAYSURF.fill(BACKGROUNDCOLOR)
 
 def print_text(text_in,x,y,back_colour):
@@ -102,7 +102,6 @@ if __name__ == '__main__':
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_m:
                     pygame.mixer.music.stop() if pygame.mixer.music.get_busy() else pygame.mixer.music.play(-1)
-
         if game_state=="menu":
             DISPLAYSURF.fill(BACKGROUNDCOLOR)
             card_list = load_cards_from_csv()
@@ -119,6 +118,7 @@ if __name__ == '__main__':
             previous_human_move = True
             score = 0
             remaining_time = TURN_TIME_LIMIT
+            rule_plus=False
 
             left_buttons = []
             right_buttons = []
@@ -139,10 +139,19 @@ if __name__ == '__main__':
                 x = i % 3 * CELL_WIDTH + GRID_X + LINE_WIDTH
                 y = GRID_Y + LINE_WIDTH + int(i / 3) * CELL_HEIGHT
                 field_buttons.append(Button(x, y, CELL_WIDTH - LINE_WIDTH, CELL_HEIGHT - LINE_WIDTH))
+
             start_button=Button(WINDOWWIDTH//3,WINDOWHEIGHT //10, WINDOWWIDTH//3,WINDOWHEIGHT //10)
-            music_button=Button(WINDOWWIDTH//3,(WINDOWHEIGHT //10)*3, WINDOWWIDTH//3,WINDOWHEIGHT //10)
-            if start_button.text_show(DISPLAYSURF,"START",TEAL): game_state="left_select_card"
-            elif music_button.text_show(DISPLAYSURF,"INSTRUCTIONS",TEAL): game_state="instructions"
+            start_plus_button=Button(WINDOWWIDTH//3,(WINDOWHEIGHT //10)*3, WINDOWWIDTH//3,WINDOWHEIGHT //10)
+            guide_button=Button(WINDOWWIDTH//3,(WINDOWHEIGHT //10)*5, WINDOWWIDTH//3,WINDOWHEIGHT //10)
+            exit_button=Button(WINDOWWIDTH//3,(WINDOWHEIGHT //10)*8, WINDOWWIDTH//3,WINDOWHEIGHT //10)
+            if start_button.draw_text(DISPLAYSURF, "START", TEAL): game_state= "left_select_card"
+            elif start_plus_button.draw_text(DISPLAYSURF,"START PLUS", TEAL):
+                rule_plus=True
+                game_state="left_select_card"
+            elif guide_button.draw_text(DISPLAYSURF, "INSTRUCTIONS", TEAL): game_state= "instructions"
+            elif exit_button.draw_text(DISPLAYSURF, "EXIT", TEAL):
+                pygame.quit()
+                sys.exit()
             else:game_state = "menu"
 
 
@@ -151,55 +160,48 @@ if __name__ == '__main__':
             if game_state!="results":
                 for i in range(1, GRID_SIZE):
                      x = GRID_X + i * CELL_WIDTH
-                     pygame.draw.line(pygame.display.get_surface(), BLACK, (x, GRID_Y), (x, GRID_Y + GRID_HEIGHT), LINE_WIDTH)
+                     pygame.draw.line(DISPLAYSURF, BLACK, (x, GRID_Y), (x, GRID_Y + GRID_HEIGHT), LINE_WIDTH)
 
                 for i in range(1, GRID_SIZE):
                     y = GRID_Y + i * CELL_HEIGHT
-                    pygame.draw.line(pygame.display.get_surface(), BLACK, (GRID_X, y), (GRID_X + GRID_WIDTH, y), LINE_WIDTH)
+                    pygame.draw.line(DISPLAYSURF, BLACK, (GRID_X, y), (GRID_X + GRID_WIDTH, y), LINE_WIDTH)
 
 
                 font = pygame.font.SysFont(None, 48)
                 text = font.render("SCORE: "+ str(score), True, (0, 0, 0))
                 text_rect = text.get_rect()
                 text_rect.topleft = (10, 5)
-                pygame.display.get_surface().fill(BACKGROUNDCOLOR, text_rect)
-                pygame.display.get_surface().blit(text, text_rect)
+                DISPLAYSURF.fill(BACKGROUNDCOLOR, text_rect)
+                DISPLAYSURF.blit(text, text_rect)
                 pygame.display.update(text_rect)
                 font = pygame.font.SysFont(None, 18)
                 text = font.render("time left: "+ str(int(remaining_time)), True, (0, 0, 0))
                 text_rect.topleft = (10, 40)
-                pygame.display.get_surface().fill(BACKGROUNDCOLOR, text_rect)
-                pygame.display.get_surface().blit(text, text_rect)
+                DISPLAYSURF.fill(BACKGROUNDCOLOR, text_rect)
+                DISPLAYSURF.blit(text, text_rect)
                 pygame.display.update(text_rect)
-
-
-            # DISPLAYSURF.fill(TEAL)
-
-
 
             if game_state == "left_select_card":
                 previous_human_move = True
                 for i, btn in enumerate(left_buttons):
-                    if btn.draw(DISPLAYSURF, left_hand[i]):
+                    if btn.draw_card(DISPLAYSURF, left_hand[i]):
                         selected_card=i
-                        # print(selected_card)
+                        left_hand[i].colour=TEAL
                         game_state="left_place_card"
             else:
                 for i, btn in enumerate(left_buttons):
-                    btn.draw(DISPLAYSURF, left_hand[i])
+                    btn.draw_card(DISPLAYSURF, left_hand[i])
 
             if game_state == "left_place_card":
                 for i, btn in enumerate(field_buttons):
                     if cards_on_field[i] is None:
-                        if btn.colour_show(DISPLAYSURF, BACKGROUNDCOLOR):
+                        if btn.draw_empty(DISPLAYSURF, BACKGROUNDCOLOR):
                             selected_spot = i
-                            # print(selected_spot)
                             game_state = "move_card"
                     else:
-                        btn.draw(DISPLAYSURF, cards_on_field[i])
+                        btn.draw_card(DISPLAYSURF, cards_on_field[i])
             if game_state == "move_card":
                 cards_on_field[selected_spot] = copy(left_hand[selected_card])
-                # print(left_hand[selected_card].N)
                 left_hand[selected_card].is_hidden=True
                 cards_on_field[selected_spot].colour=GREEN
                 remaining_time=TURN_TIME_LIMIT
@@ -210,7 +212,7 @@ if __name__ == '__main__':
                 available_cards = [i for i, card in enumerate(right_hand) if not card.is_hidden]
                 available_spots = [i for i, spot in enumerate(cards_on_field) if spot is None]
                 if available_spots==[] or available_cards==[]:
-                    pygame.time.wait(1000)
+                    pygame.time.wait(200)
                     game_state="results"
                 else:
                     selected_card = random.choice(available_cards)
@@ -220,29 +222,51 @@ if __name__ == '__main__':
                     right_hand[selected_card].is_hidden=True
                     game_state="check_move_results"
 
-
-
             if game_state == "check_move_results":
                 if previous_human_move:
                     colour=GREEN
                 else:
                     colour=RED
+                sum_plus =[None] *4
                 if selected_spot>2: #check north
                     if cards_on_field[selected_spot-3] is not None:
                         if cards_on_field[selected_spot].N > cards_on_field[selected_spot-3].S:
                             cards_on_field[selected_spot-3].colour=colour
+                        sum_plus[0]=int(cards_on_field[selected_spot].N)+int(cards_on_field[selected_spot-3].S)
                 if selected_spot<6: #south
                     if cards_on_field[selected_spot+3] is not None:
                         if cards_on_field[selected_spot].S > cards_on_field[selected_spot+3].N:
                             cards_on_field[selected_spot+3].colour=colour
+                        sum_plus[1] = int(cards_on_field[selected_spot].S) + int(cards_on_field[selected_spot+3].N)
                 if selected_spot % 3 !=0: #west
                     if cards_on_field[selected_spot-1] is not None:
                         if cards_on_field[selected_spot].W > cards_on_field[selected_spot-1].E:
                             cards_on_field[selected_spot-1].colour=colour
+                        sum_plus[2] = int(cards_on_field[selected_spot].W) + int(cards_on_field[selected_spot-1].E)
                 if selected_spot %3 !=2:
                     if cards_on_field[selected_spot+1] is not None:
                         if cards_on_field[selected_spot].E > cards_on_field[selected_spot+1].W:
                             cards_on_field[selected_spot+1].colour=colour
+                        sum_plus[3] = int(cards_on_field[selected_spot].E) + int(cards_on_field[selected_spot+1].W)
+                if rule_plus:
+                    indices=[]
+                    for i in range(4):
+                        for j in range(i+1, 4):
+                            if sum_plus[i] is not None and sum_plus[i]==sum_plus[j]:
+                                indices.append(j)
+                                indices.append(i)
+                                print("PLUS")
+                    if 0 in indices:
+                        cards_on_field[selected_spot - 3].colour = colour
+                    if 1 in indices:
+                        cards_on_field[selected_spot + 3].colour = colour
+                    if 2 in indices:
+                        cards_on_field[selected_spot - 1].colour = colour
+                    if 3 in indices:
+                        cards_on_field[selected_spot + 1].colour = colour
+
+
+
                 score = sum(
                     1 for card in cards_on_field
                     if card is not None and card.colour == GREEN
@@ -254,13 +278,13 @@ if __name__ == '__main__':
 
 
             for i, btn in enumerate(right_buttons):
-                btn.draw(DISPLAYSURF, right_hand[i])
+                btn.draw_card(DISPLAYSURF, right_hand[i])
 
             for i, btn in enumerate(field_buttons):
                 if cards_on_field[i] is None:
-                    btn.colour_show(DISPLAYSURF, BACKGROUNDCOLOR)
+                    btn.draw_empty(DISPLAYSURF, BACKGROUNDCOLOR)
                 else:
-                    btn.draw(DISPLAYSURF, cards_on_field[i])
+                    btn.draw_card(DISPLAYSURF, cards_on_field[i])
 
             if game_state=="results":
 
@@ -272,18 +296,16 @@ if __name__ == '__main__':
                     text = font.render("SCORE: " + str(score), True, (0, 0, 0))
                     text_rect = text.get_rect()
                     text_rect.center = (WINDOWWIDTH //2, WINDOWHEIGHT //2)
-                    pygame.display.get_surface().fill(BACKGROUNDCOLOR, text_rect)
-                    pygame.display.get_surface().blit(text, text_rect)
+                    DISPLAYSURF.fill(BACKGROUNDCOLOR, text_rect)
+                    DISPLAYSURF.blit(text, text_rect)
                     text = font.render("You won", True, (0, 0, 0))
                     text_rect = text.get_rect()
                     text_rect.center = (WINDOWWIDTH //2, WINDOWHEIGHT //4)
-                    pygame.display.get_surface().fill(BACKGROUNDCOLOR, text_rect)
-                    pygame.display.get_surface().blit(text, text_rect)
+                    DISPLAYSURF.fill(BACKGROUNDCOLOR, text_rect)
+                    DISPLAYSURF.blit(text, text_rect)
 
 
                 else:
-                    print("LOSE")
-
                     font = pygame.font.SysFont(None, 96)
                     text = font.render("SCORE: " + str(score), True, (0, 0, 0))
                     text_rect = text.get_rect()
@@ -296,7 +318,6 @@ if __name__ == '__main__':
                     pygame.display.get_surface().fill(BACKGROUNDCOLOR, text_rect)
                     pygame.display.get_surface().blit(text, text_rect)
                 remaining_time=TURN_TIME_LIMIT
-                print("end")
 
             if remaining_time<0: game_state="results"
 
