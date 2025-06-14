@@ -1,14 +1,15 @@
 import pygame
 from card import Card
+
 GRAY = (127, 127, 127)
+
 
 class Button():
     def __init__(self, x, y, width, height):
         self.width = width
         self.height = height
-        self.rect=pygame.Rect(x, y, width, height)
+        self.rect = pygame.Rect(x, y, width, height)
         self.clicked = False
-
 
     def draw_card(self, surface, card):
         action = False
