@@ -9,7 +9,7 @@ import pygame
 from pygame.locals import *
 
 DIFFICULTY = 50
-FPS = 30
+FPS = 120
 TURN_TIME_LIMIT = 15.0
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
@@ -294,7 +294,6 @@ if __name__ == '__main__':
                             if sum_plus[i] is not None and sum_plus[i] == sum_plus[j]:
                                 indices.append(j)
                                 indices.append(i)
-                                print("PLUS")
                                 if not simulate:plus_sound_effect.play()
                     if 0 in indices:
                         cards_on_field[selected_spot - 3].colour = colour
